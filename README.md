@@ -574,7 +574,7 @@ regulatory-pipeline/
 │   ├── prompt.yaml             # Prompt com regras Seagems
 │   ├── llm.yaml                # Config multi-provedor LLM
 │   └── secrets.env.example     # Template de credenciais
-├── tests/                      # 57 testes (unitários + integração)
+├── tests/                      # 148 testes unitários + 27 e2e
 │   ├── test_config.py
 │   ├── test_schema.py
 │   ├── test_normalizer.py
@@ -582,6 +582,16 @@ regulatory-pipeline/
 │   ├── test_persistence.py
 │   ├── test_html_list.py
 │   ├── test_integration.py
+│   ├── test_schemas_api.py
+│   ├── test_middleware.py
+│   ├── test_notify.py
+│   ├── test_gateway.py
+│   ├── test_api_routes.py
+│   ├── test_api_extended.py
+│   ├── test_llm_providers.py
+│   ├── test_telemetry.py
+│   ├── test_process_queue.py
+│   ├── test_processor_pipeline.py
 │   └── e2e/                    # 27 testes end-to-end
 │       ├── test_dashboard.py
 │       ├── test_api.py
@@ -663,8 +673,10 @@ python -m pytest tests/e2e/ -v -m e2e
 ### Cobertura de código
 
 ```bash
-python -m pytest tests/ --cov=. --cov-report=term-missing
+python -m pytest tests/ --cov=. --cov-report=term-missing --cov-fail-under=60
 ```
+
+Coverage mínimo exigido: **60%** (configurado em `pyproject.toml`).
 
 ### Lint e formatação
 

@@ -12,6 +12,7 @@ env = load_env()
 DATABASE_URL = env.get("DATABASE_URL", "")
 
 _is_sqlite = False
+engine = None
 
 if DATABASE_URL and "sqlite" not in DATABASE_URL:
     # Try PostgreSQL

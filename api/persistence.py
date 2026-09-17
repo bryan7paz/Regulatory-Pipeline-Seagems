@@ -6,7 +6,6 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from .database import SessionLocal
 from . import models
 
 
@@ -40,15 +39,3 @@ def build_row(raw: dict[str, Any]) -> models.RegulatoryAnalysis:
         acao_sugerida=raw.get("acao_sugerida"),
         raw_json=json.dumps(raw, ensure_ascii=False),
     )
-
-
-def persist(results: list[dict[str, Any]]) -> int:
-    """Insert a list of analyses and return how many were saved."""
-    db = SessionLocal()
-    try:
-        rows = [build_row(r) for r in results]
-        db.add_all(rows)
-        db.commit()
-        return len(rows)
-    finally:
-        db.close()

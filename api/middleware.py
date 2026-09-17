@@ -2,13 +2,10 @@
 from __future__ import annotations
 
 import hashlib
-import hmac
 import time
 from collections import defaultdict
-from functools import wraps
-from typing import Callable
 
-from fastapi import Depends, HTTPException, Request, Security
+from fastapi import HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
 
 from core.config import load_env, logger
@@ -26,9 +23,6 @@ PUBLIC_PATHS = {
     "/openapi.json",
     "/redoc",
 }
-
-# Dashboard and static assets (optional: set API_KEY_DASHBOARD to protect)
-DASHBOARD_PREFIXES = ("/docs", "/static")
 
 
 def _load_api_keys() -> set[str]:
@@ -67,10 +61,6 @@ class APIKeyAuth:
             logger.info("API Key auth: %d chave(s) configurada(s)", len(self._keys))
         else:
             logger.warning("API Key auth: NENHUMA chave configurada — API aberta")
-
-    @property
-    def enabled(self) -> bool:
-        return len(self._keys) > 0
 
     async def __call__(
         self,

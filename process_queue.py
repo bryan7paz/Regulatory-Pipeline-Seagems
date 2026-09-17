@@ -66,7 +66,7 @@ def process_queue() -> int:
 def _compact_queue(processed_hashes: list[str]) -> None:
     """Remove processed entries from queue.jsonl."""
     with open(QUEUE_PATH) as f:
-        all_lines = [l.strip() for l in f if l.strip()]
+        all_lines = [line.strip() for line in f if line.strip()]
 
     remaining = []
     for line in all_lines:

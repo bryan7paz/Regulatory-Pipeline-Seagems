@@ -59,8 +59,6 @@ class TestDocumentFlow:
 
     def _create_test_document(self, api_url):
         """Helper to create a test document."""
-        from datetime import date
-
         # This would normally be done by the pipeline
         # For E2E testing, we just verify the API works
         response = httpx.get(f"{api_url}/regs/", timeout=10)

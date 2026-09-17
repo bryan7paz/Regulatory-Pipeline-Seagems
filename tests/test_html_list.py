@@ -1,7 +1,6 @@
 """Tests for crawler/spiders/html_list.py."""
 from __future__ import annotations
 
-import pytest
 from crawler.spiders.html_list import HtmlListSpider
 
 

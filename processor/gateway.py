@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.config import logger
 from core.llm_providers import generate_structured as _generate
 
 

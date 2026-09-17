@@ -1,12 +1,8 @@
 """Integration tests — end-to-end pipeline flow."""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
 
 # Ensure project root is on sys.path
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,17 +23,6 @@ SAMPLE_LLM_RESPONSE = {
     "item": "1.2.3",
     "itens_modificados": "Anexo I, Seção 3",
     "acao_sugerida": "Atualizar equipamentos de salva-vida até 01/2025",
-}
-
-SAMPLE_QUEUE_RECORD = {
-    "title": "Circular MSC.1/Circ.1234",
-    "url": "https://example.com/doc.pdf",
-    "published_date": "2024-06-15",
-    "source_id": "iacs",
-    "source_name": "IACS",
-    "sha256": "abc123def456",
-    "local_path": str(DATA_DIR / "iacs" / "test_doc.pdf") if "DATA_DIR" in dir() else "data/iacs/test.pdf",
-    "content_type": "html",
 }
 
 

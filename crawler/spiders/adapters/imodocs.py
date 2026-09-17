@@ -26,8 +26,8 @@ class ImodocsAdapter(BaseSpider):
 
         if not user or not password:
             raise RuntimeError(
-                f"Credenciais IMODOCS não configuradas. "
-                f"Defina IMODOCS_USER e IMODOCS_PASSWORD em config/secrets.env"
+                "Credenciais IMODOCS não configuradas. "
+                "Defina IMODOCS_USER e IMODOCS_PASSWORD em config/secrets.env"
             )
 
         login_url = auth.get("login_url", f"{self.BASE_URL}/en/LogOn")

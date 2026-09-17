@@ -1,9 +1,7 @@
 """Pipeline control endpoints: run, status, SSE stream."""
 from __future__ import annotations
 
-import asyncio
 import json
-import queue
 import threading
 import time
 from pathlib import Path
@@ -159,7 +157,7 @@ async def pipeline_stream():
 
             while True:
                 # Wait for state change or timeout (1s keepalive)
-                got_event = evt.wait(timeout=1.0)
+                evt.wait(timeout=1.0)
                 evt.clear()
 
                 snap = pipeline_state.snapshot()

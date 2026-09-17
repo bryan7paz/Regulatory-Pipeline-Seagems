@@ -23,7 +23,8 @@ def _full_pipeline() -> None:
         return
 
     # 2. Process + persist via process_queue
-    import subprocess, sys
+    import subprocess
+    import sys
     try:
         result = subprocess.run(
             [sys.executable, "process_queue.py"],

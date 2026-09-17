@@ -1,7 +1,6 @@
 """OpenTelemetry observability — tracing and metrics."""
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from core.config import load_env, logger
@@ -51,43 +50,3 @@ def setup_telemetry(app_name: str = "regulatory-pipeline") -> Any:
     except ImportError:
         logger.warning("OpenTelemetry não instalado. Instale: pip install opentelemetry-api opentelemetry-sdk")
         return None
-
-
-def get_tracer(name: str = __name__) -> Any:
-    """Get a tracer instance."""
-    try:
-        from opentelemetry import trace
-        return trace.get_tracer(name)
-    except ImportError:
-        return None
-
-
-def trace_span(name: str, attributes: dict[str, Any] | None = None):
-    """Context manager for creating a trace span."""
-    tracer = get_tracer()
-    if tracer is None:
-        from contextlib import nullcontext
-        return nullcontext()
-
-    from opentelemetry.trace import Status, StatusCode
-
-    class _SpanContext:
-        def __init__(self, tracer, name, attrs):
-            self.tracer = tracer
-            self.name = name
-            self.attrs = attrs or {}
-            self.span = None
-
-        def __enter__(self):
-            self.span = self.tracer.start_span(self.name, attributes=self.attrs)
-            return self.span
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            if self.span:
-                if exc_type:
-                    self.span.set_status(Status(StatusCode.ERROR, str(exc_val)))
-                    self.span.record_exception(exc_val)
-                self.span.end()
-            return False
-
-    return _SpanContext(tracer, name, attributes)

@@ -862,4 +862,5 @@ clara entre requisito, implementação, validação e publicação.
 
 ## Licença
 
-Uso interno — Seagems.
+Uso interno 
+

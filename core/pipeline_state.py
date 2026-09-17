@@ -1,8 +1,9 @@
 """Global pipeline state tracker — shared between API and background tasks."""
+
 from __future__ import annotations
 
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -26,8 +27,8 @@ class PipelineState:
 
     def _reset(self) -> None:
         self.running = False
-        self.step = ""           # "crawling" | "processing" | "persisting" | ""
-        self.current = ""        # fonte ou documento atual
+        self.step = ""  # "crawling" | "processing" | "persisting" | ""
+        self.current = ""  # fonte ou documento atual
         self.processed = 0
         self.total = 0
         self.errors: list[str] = []
@@ -48,7 +49,7 @@ class PipelineState:
             self.processed = 0
             self.total = 0
             self.errors = []
-            self.started_at = datetime.now(timezone.utc)
+            self.started_at = datetime.now(UTC)
             self._notify()
 
     def update(self, **kwargs: Any) -> None:
@@ -62,7 +63,7 @@ class PipelineState:
             self.running = False
             self.step = ""
             self.current = ""
-            self.last_run = datetime.now(timezone.utc)
+            self.last_run = datetime.now(UTC)
             self.last_run_ok = ok
             self._notify()
 

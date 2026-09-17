@@ -1,15 +1,17 @@
 """Orchestrates the crawl: detect new items and enqueue downloads."""
+
 from __future__ import annotations
 
 import asyncio
 from typing import Any
 
-from core.config import load_sources, logger
 from core.browser import close_pool
+from core.config import load_sources, logger
+
+from . import storage
 from .downloader import download
 from .spiders.base import Item
 from .spiders.registry import get_spider
-from . import storage
 
 
 async def run_source(source: dict[str, Any]) -> list[dict[str, Any]]:
@@ -31,7 +33,7 @@ async def run_source(source: dict[str, Any]) -> list[dict[str, Any]]:
             continue
         try:
             content = await download(it.url)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Download falhou %s: %s", it.url, exc)
             continue
         record = storage.enqueue(d, content)
@@ -53,7 +55,7 @@ async def run_all() -> list[dict[str, Any]]:
             logger.info("Processando fonte: %s", source_id)
             try:
                 records = await run_source(source)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.error("Fonte %s falhou: %s", source_id, exc)
                 records = []
             logger.info("  -> %d documento(s) novo(s)", len(records))

@@ -1,7 +1,8 @@
 """Tests for core/config.py."""
+
 from __future__ import annotations
 
-from core.config import load_sources, load_prompt, validate_env
+from core.config import load_prompt, load_sources, validate_env
 
 
 class TestLoadSources:
@@ -29,9 +30,15 @@ class TestLoadPrompt:
 
     def test_has_required_keys(self):
         prompt = load_prompt()
-        for key in ("system", "contexto_empresa", "instrucoes",
-                     "legenda_assunto", "legenda_aplicacao", "legenda_status",
-                     "regras_duras"):
+        for key in (
+            "system",
+            "contexto_empresa",
+            "instrucoes",
+            "legenda_assunto",
+            "legenda_aplicacao",
+            "legenda_status",
+            "regras_duras",
+        ):
             assert key in prompt, f"Missing key: {key}"
 
 

@@ -1,4 +1,5 @@
 """Document downloader with retry logic and shared browser pool."""
+
 from __future__ import annotations
 
 import asyncio
@@ -19,12 +20,15 @@ async def download(url: str) -> bytes:
             if url.lower().endswith(".pdf"):
                 return await _download_file(url)
             return await _download_html(url)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             last_exc = exc
             if attempt < MAX_RETRIES:
                 logger.warning(
                     "Download tentativa %d/%d falhou: %s — retry em %ds",
-                    attempt, MAX_RETRIES, exc, attempt * 2,
+                    attempt,
+                    MAX_RETRIES,
+                    exc,
+                    attempt * 2,
                 )
                 await asyncio.sleep(attempt * 2)
             else:

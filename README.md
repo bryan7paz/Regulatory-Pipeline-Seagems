@@ -484,8 +484,7 @@ with open("dados.csv", "wb") as f:
 
 # Validar documento
 resp = httpx.post(
-    f"{BASE}/regs/{doc_id}/validate",
-    json={"action": "aprovado", "validated_by": "analista"}
+    f"{BASE}/regs/{doc_id}/validate", json={"action": "aprovado", "validated_by": "analista"}
 )
 print(resp.json())
 

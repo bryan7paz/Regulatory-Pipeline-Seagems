@@ -1,4 +1,5 @@
 """PDF listing spider for portals that index PDF documents directly."""
+
 from __future__ import annotations
 
 from urllib.parse import urljoin
@@ -10,8 +11,8 @@ class PdfListSpider(BaseSpider):
     """Extracts PDF links only (stricter than generic HTML list)."""
 
     async def fetch_items(self) -> list[Item]:
-        from core.browser import get_browser
         from bs4 import BeautifulSoup
+        from core.browser import get_browser
 
         async with get_browser() as page:
             await page.goto(self.url, wait_until="domcontentloaded", timeout=60000)

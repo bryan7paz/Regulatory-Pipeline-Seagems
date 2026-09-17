@@ -1,4 +1,5 @@
 """Prompt builder: assembles the full prompt from config/prompt.yaml."""
+
 from __future__ import annotations
 
 from core.config import load_prompt

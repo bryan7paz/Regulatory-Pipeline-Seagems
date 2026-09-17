@@ -1,24 +1,24 @@
 """Pipeline control endpoints: run, status, SSE stream."""
+
 from __future__ import annotations
 
 import json
 import threading
 import time
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator
-
-from fastapi import APIRouter
-from fastapi.responses import StreamingResponse
 
 from core.config import logger
 from core.pipeline_state import pipeline_state
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
 
 def _run_pipeline_background() -> None:
     """Execute crawl + process in a background thread, updating state."""
-    from core.notify import notify_pipeline_complete, notify_pipeline_error, notify_new_documents
+    from core.notify import notify_new_documents, notify_pipeline_complete, notify_pipeline_error
 
     pipeline_state.start()
     start_time = time.time()
@@ -27,6 +27,7 @@ def _run_pipeline_background() -> None:
         # ── Crawl ──────────────────────────────────────────────────
         pipeline_state.update(step="crawling", current="Iniciando crawler...")
         import asyncio as _asyncio
+
         from crawler.runner import run_all
 
         records = _asyncio.run(run_all())
@@ -63,7 +64,7 @@ def _run_pipeline_background() -> None:
             duration_seconds=duration,
         )
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.error("Pipeline falhou: %s", exc)
         pipeline_state.add_error(str(exc))
         pipeline_state.finish(ok=False)
@@ -86,7 +87,7 @@ def _process_only_background() -> None:
             new_documents=state.get("docs_persisted", 0),
             duration_seconds=duration,
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.error("Processamento falhou: %s", exc)
         pipeline_state.add_error(str(exc))
         notify_pipeline_error(str(exc))
@@ -148,6 +149,7 @@ def pipeline_status():
 @router.get("/stream")
 async def pipeline_stream():
     """SSE endpoint: pushes state updates every second while pipeline runs."""
+
     async def event_generator() -> AsyncGenerator[str, None]:
         evt = pipeline_state.subscribe()
         try:
@@ -182,18 +184,20 @@ async def pipeline_stream():
 
 # ── LLM Providers ───────────────────────────────────────────────
 
+
 @router.get("/providers")
 def list_providers():
     """List available LLM providers and their status."""
     from core.llm_providers import list_providers as _list
+
     return _list()
 
 
 @router.post("/providers/{provider_id}/activate")
 def activate_provider(provider_id: str):
     """Set a provider as active in config/llm.yaml."""
-    from core.llm_providers import PROVIDERS, CONFIG_PATH
     import yaml
+    from core.llm_providers import CONFIG_PATH, PROVIDERS
 
     if provider_id not in PROVIDERS:
         return {"ok": False, "error": f"Provedor '{provider_id}' não existe"}
@@ -216,12 +220,21 @@ SECRETS_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "secre
 
 # Keys that are safe to show (masked) vs sensitive (never return value)
 SENSITIVE_KEYS = {
-    "GOOGLE_API_KEY", "GROQ_API_KEY", "NVIDIA_API_KEY", "OPENROUTER_API_KEY",
-    "CEREBRAS_API_KEY", "MISTRAL_API_KEY", "OPENAI_API_KEY", "CUSTOM_LLM_API_KEY",
+    "GOOGLE_API_KEY",
+    "GROQ_API_KEY",
+    "NVIDIA_API_KEY",
+    "OPENROUTER_API_KEY",
+    "CEREBRAS_API_KEY",
+    "MISTRAL_API_KEY",
+    "OPENAI_API_KEY",
+    "CUSTOM_LLM_API_KEY",
     "IMODOCS_PASSWORD",
 }
 SAFE_KEYS = {
-    "DATABASE_URL", "SCHEDULE_HOUR", "SCHEDULE_TIMEZONE", "IMODOCS_USER",
+    "DATABASE_URL",
+    "SCHEDULE_HOUR",
+    "SCHEDULE_TIMEZONE",
+    "IMODOCS_USER",
 }
 
 
@@ -311,10 +324,12 @@ def save_settings(body: dict[str, str]):
 
 # ── Notifications ────────────────────────────────────────────────
 
+
 @router.get("/notifications")
 def list_notifications(limit: int = 50):
     """List recent pipeline notifications."""
     from core.notify import get_notifications
+
     return get_notifications(limit=limit)
 
 
@@ -322,5 +337,6 @@ def list_notifications(limit: int = 50):
 def clear_notifications():
     """Clear notification history."""
     from core.notify import clear_notifications
+
     count = clear_notifications()
     return {"ok": True, "cleared": count}

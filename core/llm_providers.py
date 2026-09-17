@@ -2,14 +2,15 @@
 
 Providers configured in config/llm.yaml with fallback chain.
 """
+
 from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 from typing import Any
 
 import yaml
-from pathlib import Path
 
 from core.config import logger
 
@@ -28,6 +29,7 @@ def _load_config() -> dict[str, Any]:
 
 def _get_env(key: str, fallback: str = "") -> str:
     import os
+
     return os.environ.get(key, fallback)
 
 
@@ -137,6 +139,7 @@ PROVIDERS = {
 
 # ── Public API ───────────────────────────────────────────────────
 
+
 def generate_structured(system_prompt: str, user_prompt: str) -> dict[str, Any]:
     """Call the active LLM provider with retry + fallback chain.
 
@@ -184,16 +187,22 @@ def generate_structured(system_prompt: str, user_prompt: str) -> dict[str, Any]:
                     result = call_fn(system_prompt, user_prompt, model, api_key)
                 logger.info("Sucesso com %s após %d tentativa(s)", provider["name"], attempt)
                 return result
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 last_exc = exc
                 if attempt < MAX_RETRIES:
                     logger.warning(
                         "%s tentativa %d/%d falhou: %s — retry em %ds",
-                        provider["name"], attempt, MAX_RETRIES, exc, RETRY_DELAY * attempt,
+                        provider["name"],
+                        attempt,
+                        MAX_RETRIES,
+                        exc,
+                        RETRY_DELAY * attempt,
                     )
                     time.sleep(RETRY_DELAY * attempt)
                 else:
-                    logger.error("%s falhou após %d tentativas: %s", provider["name"], MAX_RETRIES, exc)
+                    logger.error(
+                        "%s falhou após %d tentativas: %s", provider["name"], MAX_RETRIES, exc
+                    )
                     break  # Try next provider in fallback chain
 
     raise last_exc or RuntimeError("Nenhum provedor LLM disponível")
@@ -209,12 +218,14 @@ def list_providers() -> list[dict[str, Any]]:
     for pid, pinfo in PROVIDERS.items():
         pcfg = providers_cfg.get(pid, {})
         api_key = _get_env(pinfo["env_key"], pcfg.get("api_key", ""))
-        result.append({
-            "id": pid,
-            "name": pinfo["name"],
-            "enabled": pcfg.get("enabled", True),
-            "active": pid == active,
-            "configured": bool(api_key),
-            "model": pcfg.get("model", ""),
-        })
+        result.append(
+            {
+                "id": pid,
+                "name": pinfo["name"],
+                "enabled": pcfg.get("enabled", True),
+                "active": pid == active,
+                "configured": bool(api_key),
+                "model": pcfg.get("model", ""),
+            }
+        )
     return result

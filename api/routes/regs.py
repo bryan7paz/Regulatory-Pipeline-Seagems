@@ -1,10 +1,10 @@
 """Routes for regulations: CRUD, search, filters, batch validate, export."""
+
 from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -12,28 +12,32 @@ from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from ..database import get_db
 from .. import models
-from ..schemas import AnalysisOut, AnalysisDetail, ValidationAction
+from ..database import get_db
+from ..schemas import AnalysisDetail, AnalysisOut, ValidationAction
 
 router = APIRouter(prefix="/regs", tags=["regs"])
 
 
 # ── List with search + filters + pagination ────────────────────────
 
+
 @router.get("/")
 def list_analyses(
-    q: Optional[str] = None,
-    assunto: Optional[str] = None,
-    aplicacao: Optional[str] = None,
-    status: Optional[str] = None,
-    validacao: Optional[str] = None,
-    fonte: Optional[str] = None,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-    sort_by: str = Query(default="created_at", regex="^(created_at|data_publicacao|entrada_em_vigor|norma|assunto|aplicacao|status|validacao)$"),
+    q: str | None = None,
+    assunto: str | None = None,
+    aplicacao: str | None = None,
+    status: str | None = None,
+    validacao: str | None = None,
+    fonte: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    sort_by: str = Query(
+        default="created_at",
+        regex="^(created_at|data_publicacao|entrada_em_vigor|norma|assunto|aplicacao|status|validacao)$",
+    ),
     sort_order: str = Query(default="desc", regex="^(asc|desc)$"),
-    fields: Optional[str] = None,
+    fields: str | None = None,
     page: int = Query(default=1, ge=1),
     size: int = Query(default=20, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -70,6 +74,7 @@ def list_analyses(
     if date_from:
         try:
             from datetime import date
+
             df = date.fromisoformat(date_from)
             q_query = q_query.filter(models.RegulatoryAnalysis.data_publicacao >= df)
         except ValueError:
@@ -77,6 +82,7 @@ def list_analyses(
     if date_to:
         try:
             from datetime import date
+
             dt = date.fromisoformat(date_to)
             q_query = q_query.filter(models.RegulatoryAnalysis.data_publicacao <= dt)
         except ValueError:
@@ -99,8 +105,7 @@ def list_analyses(
     if fields:
         field_list = [f.strip() for f in fields.split(",")]
         result_items = [
-            {k: v for k, v in item.model_dump().items() if k in field_list}
-            for item in result_items
+            {k: v for k, v in item.model_dump().items() if k in field_list} for item in result_items
         ]
 
     return {
@@ -116,9 +121,10 @@ def list_analyses(
 
 # ── CSV export (MUST be before /{analysis_id}) ────────────────────
 
+
 @router.get("/export/csv")
 def export_csv(
-    validacao: Optional[str] = None,
+    validacao: str | None = None,
     db: Session = Depends(get_db),
 ):
     q = db.query(models.RegulatoryAnalysis)
@@ -128,22 +134,45 @@ def export_csv(
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow([
-        "id", "fonte", "data_publicacao", "entrada_em_vigor", "requisito",
-        "norma", "assunto", "aplicacao", "status", "item", "itens_modificados",
-        "acao_sugerida", "validacao", "validado_por", "url_origem",
-    ])
+    writer.writerow(
+        [
+            "id",
+            "fonte",
+            "data_publicacao",
+            "entrada_em_vigor",
+            "requisito",
+            "norma",
+            "assunto",
+            "aplicacao",
+            "status",
+            "item",
+            "itens_modificados",
+            "acao_sugerida",
+            "validacao",
+            "validado_por",
+            "url_origem",
+        ]
+    )
     for r in rows:
-        writer.writerow([
-            r.id, r.source_id,
-            r.data_publicacao.isoformat() if r.data_publicacao else "",
-            r.entrada_em_vigor.isoformat() if r.entrada_em_vigor else "",
-            r.requisito or "", r.norma or "", r.assunto or "",
-            r.aplicacao or "", r.status or "", r.item or "",
-            r.itens_modificados or "", r.acao_sugerida or "",
-            r.status_validacao or "", r.validated_by or "",
-            r.url_origem or "",
-        ])
+        writer.writerow(
+            [
+                r.id,
+                r.source_id,
+                r.data_publicacao.isoformat() if r.data_publicacao else "",
+                r.entrada_em_vigor.isoformat() if r.entrada_em_vigor else "",
+                r.requisito or "",
+                r.norma or "",
+                r.assunto or "",
+                r.aplicacao or "",
+                r.status or "",
+                r.item or "",
+                r.itens_modificados or "",
+                r.acao_sugerida or "",
+                r.status_validacao or "",
+                r.validated_by or "",
+                r.url_origem or "",
+            ]
+        )
 
     buf.seek(0)
     return StreamingResponse(
@@ -154,6 +183,7 @@ def export_csv(
 
 
 # ── Batch validate ─────────────────────────────────────────────────
+
 
 class BatchValidationRequest(BaseModel):
     ids: list[str]
@@ -169,11 +199,9 @@ def batch_validate(body: BatchValidationRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="action deve ser 'aprovado' ou 'reprovado'")
 
     rows = (
-        db.query(models.RegulatoryAnalysis)
-        .filter(models.RegulatoryAnalysis.id.in_(body.ids))
-        .all()
+        db.query(models.RegulatoryAnalysis).filter(models.RegulatoryAnalysis.id.in_(body.ids)).all()
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     updated = 0
     for row in rows:
         row.status_validacao = body.action
@@ -195,6 +223,7 @@ def batch_validate(body: BatchValidationRequest, db: Session = Depends(get_db)):
 
 # ── Single detail ──────────────────────────────────────────────────
 
+
 @router.get("/{analysis_id}")
 def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
     row = db.get(models.RegulatoryAnalysis, analysis_id)
@@ -204,6 +233,7 @@ def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
 
 
 # ── Validate single ────────────────────────────────────────────────
+
 
 @router.post("/{analysis_id}/validate", response_model=AnalysisOut)
 def validate_single(
@@ -218,7 +248,7 @@ def validate_single(
         raise HTTPException(status_code=404, detail="Registro não encontrado")
 
     row.status_validacao = body.action
-    row.validated_at = datetime.now(timezone.utc)
+    row.validated_at = datetime.now(UTC)
     row.validated_by = (body.validated_by or "especialista")[:100]
     db.commit()
     db.refresh(row)
@@ -229,14 +259,16 @@ def validate_single(
 
 # ── PDF Export ───────────────────────────────────────────────────
 
+
 @router.get("/export/pdf")
 def export_pdf(
-    validacao: Optional[str] = None,
-    fonte: Optional[str] = None,
+    validacao: str | None = None,
+    fonte: str | None = None,
     db: Session = Depends(get_db),
 ):
     """Export analysis results as a formatted PDF."""
     from pathlib import Path
+
     from jinja2 import Environment, FileSystemLoader
     from weasyprint import HTML
 
@@ -274,7 +306,7 @@ def export_pdf(
         rejected=rejected,
         pending=pending,
         filters=filters,
-        generated_at=datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC"),
+        generated_at=datetime.now(UTC).strftime("%d/%m/%Y %H:%M UTC"),
     )
 
     # Generate PDF
@@ -289,15 +321,16 @@ def export_pdf(
 
 # ── Excel Export ─────────────────────────────────────────────────
 
+
 @router.get("/export/excel")
 def export_excel(
-    validacao: Optional[str] = None,
-    fonte: Optional[str] = None,
+    validacao: str | None = None,
+    fonte: str | None = None,
     db: Session = Depends(get_db),
 ):
     """Export analysis results as an Excel spreadsheet."""
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
     from openpyxl.utils import get_column_letter
 
     q = db.query(models.RegulatoryAnalysis)
@@ -313,10 +346,21 @@ def export_excel(
 
     # Headers
     headers = [
-        "ID", "Fonte", "Data Publicação", "Entrada em Vigor",
-        "Requisito", "Norma", "Assunto", "Aplicação", "Status",
-        "Item", "Itens Modificados", "Ação Sugerida", "Validação",
-        "Validado por", "URL Origem",
+        "ID",
+        "Fonte",
+        "Data Publicação",
+        "Entrada em Vigor",
+        "Requisito",
+        "Norma",
+        "Assunto",
+        "Aplicação",
+        "Status",
+        "Item",
+        "Itens Modificados",
+        "Ação Sugerida",
+        "Validação",
+        "Validado por",
+        "URL Origem",
     ]
 
     # Style headers
@@ -339,13 +383,20 @@ def export_excel(
     # Data rows
     for row_idx, row in enumerate(rows, 2):
         data = [
-            row.id, row.source_id,
+            row.id,
+            row.source_id,
             row.data_publicacao.isoformat() if row.data_publicacao else "",
             row.entrada_em_vigor.isoformat() if row.entrada_em_vigor else "",
-            row.requisito or "", row.norma or "", row.assunto or "",
-            row.aplicacao or "", row.status or "", row.item or "",
-            row.itens_modificados or "", row.acao_sugerida or "",
-            row.status_validacao or "", row.validated_by or "",
+            row.requisito or "",
+            row.norma or "",
+            row.assunto or "",
+            row.aplicacao or "",
+            row.status or "",
+            row.item or "",
+            row.itens_modificados or "",
+            row.acao_sugerida or "",
+            row.status_validacao or "",
+            row.validated_by or "",
             row.url_origem or "",
         ]
         for col, value in enumerate(data, 1):

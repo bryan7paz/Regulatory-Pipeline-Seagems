@@ -1,8 +1,9 @@
 """Notification system — logs pipeline events to console/file."""
+
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +21,7 @@ def _log_event(event_type: str, data: dict[str, Any]) -> None:
     _ensure_log_dir()
 
     event = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "event": event_type,
         **data,
     }
@@ -63,12 +64,15 @@ def notify_pipeline_complete(
     duration_seconds: float = 0,
 ) -> None:
     """Notify when pipeline finishes."""
-    _log_event("pipeline_complete", {
-        "processed": processed,
-        "new_documents": new_documents,
-        "errors": errors or [],
-        "duration_seconds": round(duration_seconds, 2),
-    })
+    _log_event(
+        "pipeline_complete",
+        {
+            "processed": processed,
+            "new_documents": new_documents,
+            "errors": errors or [],
+            "duration_seconds": round(duration_seconds, 2),
+        },
+    )
 
 
 def notify_pipeline_error(error: str, source: str = "") -> None:
@@ -76,22 +80,30 @@ def notify_pipeline_error(error: str, source: str = "") -> None:
     _log_event("pipeline_error", {"error": error, "source": source})
 
 
-def notify_new_documents(count: int, source: str, documents: list[dict[str, Any]] | None = None) -> None:
+def notify_new_documents(
+    count: int, source: str, documents: list[dict[str, Any]] | None = None
+) -> None:
     """Notify when new documents are found."""
-    _log_event("new_documents", {
-        "count": count,
-        "source": source,
-        "documents": documents or [],
-    })
+    _log_event(
+        "new_documents",
+        {
+            "count": count,
+            "source": source,
+            "documents": documents or [],
+        },
+    )
 
 
 def notify_validation(doc_id: str, action: str, validated_by: str) -> None:
     """Notify when a document is validated."""
-    _log_event("validation", {
-        "doc_id": doc_id,
-        "action": action,
-        "validated_by": validated_by,
-    })
+    _log_event(
+        "validation",
+        {
+            "doc_id": doc_id,
+            "action": action,
+            "validated_by": validated_by,
+        },
+    )
 
 
 def get_notifications(limit: int = 50) -> list[dict[str, Any]]:

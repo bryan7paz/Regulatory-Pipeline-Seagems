@@ -2,13 +2,14 @@
 
 Runs crawl → process → persist as a single job.
 """
+
 from __future__ import annotations
 
 import asyncio
 
 from apscheduler.schedulers.blocking import BlockingScheduler
-
 from core.config import load_env, logger
+
 from crawler.runner import run_all
 
 
@@ -25,6 +26,7 @@ def _full_pipeline() -> None:
     # 2. Process + persist via process_queue
     import subprocess
     import sys
+
     try:
         result = subprocess.run(
             [sys.executable, "process_queue.py"],
@@ -39,7 +41,7 @@ def _full_pipeline() -> None:
             logger.info("[scheduler] process_queue concluído:\n%s", result.stdout)
     except subprocess.TimeoutExpired:
         logger.error("[scheduler] process_queue timeout (600s)")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.error("[scheduler] erro ao rodar process_queue: %s", exc)
 
 

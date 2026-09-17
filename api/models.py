@@ -1,7 +1,8 @@
 """SQLAlchemy ORM models."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, Date, DateTime, String, Text
 
@@ -19,6 +20,7 @@ def _enum_col(*values: str, name: str):
     if _is_sqlite:
         return Column(String, nullable=True)
     from sqlalchemy import Enum
+
     return Column(Enum(*values, name=name), nullable=True)
 
 
@@ -35,7 +37,9 @@ class RegulatoryAnalysis(Base):
     entrada_em_vigor = Column(Date, nullable=True)
     requisito = Column(String, nullable=True)
     norma = Column(String, nullable=True)
-    assunto = _enum_col("SEG", "INC", "COM", "NAV", "CON", "TRI", "AMB", "NAU", "IMO", name="assunto_enum")
+    assunto = _enum_col(
+        "SEG", "INC", "COM", "NAV", "CON", "TRI", "AMB", "NAU", "IMO", name="assunto_enum"
+    )
     aplicacao = _enum_col("D", "I", "NP", name="aplicacao_enum")
     status = _enum_col("R", "N", name="status_enum")
     item = Column(String, nullable=True)
@@ -45,6 +49,6 @@ class RegulatoryAnalysis(Base):
     status_validacao = Column(String, default=ValidationStatus.PENDENTE)
     raw_json = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     validated_at = Column(DateTime, nullable=True)
     validated_by = Column(String, nullable=True)

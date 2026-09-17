@@ -1,11 +1,11 @@
 """IMODOCS adapter — authenticated spider for IMO documents portal."""
+
 from __future__ import annotations
 
 import re
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
-
 from core.config import load_env, logger
 
 from crawler.spiders.base import BaseSpider, Item
@@ -53,10 +53,7 @@ class ImodocsAdapter(BaseSpider):
             logger.info("Login OK, buscando documentos...")
 
             # Navigate to document listing page
-            search_url = auth.get(
-                "search_url",
-                f"{self.BASE_URL}/en/Search"
-            )
+            search_url = auth.get("search_url", f"{self.BASE_URL}/en/Search")
             await page.goto(search_url, wait_until="domcontentloaded", timeout=60000)
             await page.wait_for_load_state("networkidle", timeout=30000)
 
@@ -101,7 +98,9 @@ class ImodocsAdapter(BaseSpider):
                     continue
 
                 # Must link to a document (PDF, HTML, or detail page)
-                if not any(ext in href.lower() for ext in [".pdf", "/document/", "/detail", "/view"]):
+                if not any(
+                    ext in href.lower() for ext in [".pdf", "/document/", "/detail", "/view"]
+                ):
                     continue
 
                 title = a.get_text(" ", strip=True)
@@ -117,13 +116,15 @@ class ImodocsAdapter(BaseSpider):
                 # Try to extract date from row context
                 date = self._extract_date(row)
 
-                items.append(Item(
-                    title=title,
-                    url=full_url,
-                    published_date=date,
-                    source_id=self.source_id,
-                    extra={"portal": "imodocs"},
-                ))
+                items.append(
+                    Item(
+                        title=title,
+                        url=full_url,
+                        published_date=date,
+                        source_id=self.source_id,
+                        extra={"portal": "imodocs"},
+                    )
+                )
 
         # Fallback: extract all PDF links if no structured listing found
         if not items:
@@ -134,12 +135,14 @@ class ImodocsAdapter(BaseSpider):
                     if full_url not in seen:
                         seen.add(full_url)
                         title = a.get_text(" ", strip=True) or "Documento IMO"
-                        items.append(Item(
-                            title=title,
-                            url=full_url,
-                            source_id=self.source_id,
-                            extra={"portal": "imodocs"},
-                        ))
+                        items.append(
+                            Item(
+                                title=title,
+                                url=full_url,
+                                source_id=self.source_id,
+                                extra={"portal": "imodocs"},
+                            )
+                        )
 
         return items
 

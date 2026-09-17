@@ -1,4 +1,5 @@
 """Sitemap/RSS spider for portals exposing structured feeds."""
+
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
@@ -53,8 +54,9 @@ class SitemapSpider(BaseSpider):
             link = item.findtext("link") or ""
             pub = item.findtext("pubDate") or None
             if link:
-                entries.append(Item(title=title, url=link, published_date=pub,
-                                    source_id=self.source_id))
+                entries.append(
+                    Item(title=title, url=link, published_date=pub, source_id=self.source_id)
+                )
         return entries
 
     def _parse_any(self, root: ET.Element) -> list[Item]:
@@ -62,6 +64,7 @@ class SitemapSpider(BaseSpider):
         entries = []
         for el in root.iter():
             if el.tag.endswith("loc") and el.text:
-                entries.append(Item(title=el.text.rsplit("/", 1)[-1], url=el.text,
-                                    source_id=self.source_id))
+                entries.append(
+                    Item(title=el.text.rsplit("/", 1)[-1], url=el.text, source_id=self.source_id)
+                )
         return entries

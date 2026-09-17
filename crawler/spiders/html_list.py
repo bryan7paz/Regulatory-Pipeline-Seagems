@@ -5,6 +5,7 @@ Supports per-source config:
   - ``filters``:      list of keywords the anchor text/url must contain
   - ``link_pattern``: regex pattern — only URLs matching this pattern are returned
 """
+
 from __future__ import annotations
 
 import re
@@ -16,8 +17,20 @@ from .base import BaseSpider, Item
 class HtmlListSpider(BaseSpider):
     """Loads a page and extracts candidate document links (pdf/html)."""
 
-    KEYWORDS = ["circular", "resolution", "marine notice", "norma", "np", "dpc",
-                "aplic", "alteracao", "mmc", "notice", "amendment", "update"]
+    KEYWORDS = [
+        "circular",
+        "resolution",
+        "marine notice",
+        "norma",
+        "np",
+        "dpc",
+        "aplic",
+        "alteracao",
+        "mmc",
+        "notice",
+        "amendment",
+        "update",
+    ]
 
     async def fetch_items(self) -> list[Item]:
         from core.browser import get_browser
@@ -46,7 +59,7 @@ class HtmlListSpider(BaseSpider):
 
         for a in root.find_all("a", href=True):
             href = a["href"]
-            text = (a.get_text(" ", strip=True) or "")
+            text = a.get_text(" ", strip=True) or ""
             full_url = urljoin(self.url, href)
 
             if not text or full_url in seen:
@@ -72,8 +85,4 @@ class HtmlListSpider(BaseSpider):
         lower = f"{text} {url}".lower()
         has_keyword = any(k in lower for k in self.KEYWORDS)
         is_doc = url.lower().endswith((".pdf", ".html", ".htm")) or "pdf" in url.lower()
-        if is_doc:
-            return True
-        if has_keyword and len(text) > 5:
-            return True
-        return False
+        return is_doc or bool(has_keyword and len(text) > 5)

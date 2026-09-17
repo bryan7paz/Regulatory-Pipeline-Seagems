@@ -5,17 +5,17 @@ After processing, compacts the queue file (removes processed entries).
 
 Can be run standalone or imported as a module.
 """
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from sqlalchemy import select
-
-from api.database import Base, engine, SessionLocal
 from api import models, persistence
-from processor import pipeline
+from api.database import Base, SessionLocal, engine
 from core.config import logger
+from processor import pipeline
+from sqlalchemy import select
 
 QUEUE_PATH = Path(__file__).resolve().parent / "data" / "queue.jsonl"
 
@@ -27,7 +27,9 @@ def process_queue() -> int:
     records = pipeline.read_queue()
     db = SessionLocal()
     try:
-        existing = {h for (h,) in db.execute(select(models.RegulatoryAnalysis.documento_hash)).all() if h}
+        existing = {
+            h for (h,) in db.execute(select(models.RegulatoryAnalysis.documento_hash)).all() if h
+        }
     finally:
         db.close()
 
@@ -40,7 +42,7 @@ def process_queue() -> int:
             continue
         try:
             raw = pipeline.process_record(record)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning("Erro processando %s: %s", record.get("title"), exc)
             continue
 
@@ -53,7 +55,12 @@ def process_queue() -> int:
             db.close()
         processed += 1
         processed_hashes.append(sha)
-        logger.info("[ok] %s | %s/%s", raw.get("norma") or record.get("title"), raw.get("status"), raw.get("aplicacao"))
+        logger.info(
+            "[ok] %s | %s/%s",
+            raw.get("norma") or record.get("title"),
+            raw.get("status"),
+            raw.get("aplicacao"),
+        )
 
     # Compact queue: remove processed entries
     if QUEUE_PATH.exists() and processed_hashes:

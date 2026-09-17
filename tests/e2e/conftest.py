@@ -1,4 +1,5 @@
 """Shared E2E test fixtures."""
+
 from __future__ import annotations
 
 import sys
@@ -16,6 +17,7 @@ if str(ROOT) not in sys.path:
 def base_url():
     """Base URL for the running app."""
     import os
+
     return os.getenv("BASE_URL", "http://127.0.0.1:8000")
 
 

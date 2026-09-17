@@ -1,9 +1,10 @@
 """Tests for api/persistence.py."""
+
 from __future__ import annotations
 
 from datetime import date
 
-from api.persistence import to_date, build_row
+from api.persistence import build_row, to_date
 
 
 class TestToDate:

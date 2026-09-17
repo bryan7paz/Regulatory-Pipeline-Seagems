@@ -1,4 +1,5 @@
 """Integration tests — end-to-end pipeline flow."""
+
 from __future__ import annotations
 
 import sys
@@ -28,27 +29,32 @@ SAMPLE_LLM_RESPONSE = {
 
 # ── 1. Spider registry ──────────────────────────────────────────────
 
+
 class TestSpiderRegistry:
     def test_get_spider_returns_html_list(self):
         from crawler.spiders.registry import get_spider
+
         source = {"id": "test", "type": "html_list", "url": "https://example.com"}
         spider = get_spider(source)
         assert type(spider).__name__ == "HtmlListSpider"
 
     def test_get_spider_returns_login(self):
         from crawler.spiders.registry import get_spider
+
         source = {"id": "imodocs", "type": "login", "url": "https://docs.imo.org"}
         spider = get_spider(source)
         assert type(spider).__name__ == "ImodocsAdapter"
 
     def test_adapter_overrides_type(self):
         from crawler.spiders.registry import get_spider
+
         source = {"id": "imodocs", "type": "html_list", "url": "https://docs.imo.org"}
         spider = get_spider(source)
         assert type(spider).__name__ == "ImodocsAdapter"
 
     def test_unknown_type_falls_back_to_html_list(self):
         from crawler.spiders.registry import get_spider
+
         source = {"id": "unknown", "type": "nonexistent", "url": "https://example.com"}
         spider = get_spider(source)
         assert type(spider).__name__ == "HtmlListSpider"
@@ -56,10 +62,12 @@ class TestSpiderRegistry:
 
 # ── 2. Storage ──────────────────────────────────────────────────────
 
+
 class TestStorage:
     def test_enqueue_and_read(self, tmp_path):
-        from crawler import storage
         import time
+
+        from crawler import storage
 
         item = {
             "title": f"Test Doc {time.time()}",
@@ -99,6 +107,7 @@ class TestStorage:
 
 # ── 3. Text extraction ──────────────────────────────────────────────
 
+
 class TestExtraction:
     def test_extract_html(self):
         from processor.extract import extract_text
@@ -111,6 +120,7 @@ class TestExtraction:
 
 
 # ── 4. Normalizer ───────────────────────────────────────────────────
+
 
 class TestNormalizer:
     def test_normalize_valid(self):
@@ -133,6 +143,7 @@ class TestNormalizer:
 
 # ── 5. Prompt builder ───────────────────────────────────────────────
 
+
 class TestPromptBuilder:
     def test_build_prompt_returns_tuple(self):
         from processor.prompt_builder import build_prompt
@@ -145,6 +156,7 @@ class TestPromptBuilder:
 
 
 # ── 6. Pipeline state ───────────────────────────────────────────────
+
 
 class TestPipelineState:
     def test_singleton(self):
@@ -177,6 +189,7 @@ class TestPipelineState:
 
 # ── 7. LLM providers ────────────────────────────────────────────────
 
+
 class TestLLMProviders:
     def test_list_providers(self):
         from core.llm_providers import list_providers
@@ -194,6 +207,7 @@ class TestLLMProviders:
 
 
 # ── 8. Config ────────────────────────────────────────────────────────
+
 
 class TestConfig:
     def test_load_sources(self):

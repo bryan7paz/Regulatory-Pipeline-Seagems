@@ -2,11 +2,12 @@
 
 Run with: python run_pipeline.py
 """
+
 from __future__ import annotations
 
+from core.config import logger
 from crawler import runner
 from process_queue import process_queue
-from core.config import logger
 
 
 def main() -> None:

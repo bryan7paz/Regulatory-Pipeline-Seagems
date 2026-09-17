@@ -1,17 +1,19 @@
 """FastAPI application entry point."""
+
 from __future__ import annotations
 
+from pathlib import Path
+
+from core.config import load_env, logger, validate_env
+from core.observability import setup_telemetry
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from pathlib import Path
 
-from core.config import load_env, validate_env, logger
-from core.observability import setup_telemetry
 from .database import Base, engine
-from .routes import regs, dashboard, pipeline
 from .middleware import api_key_auth, rate_limiter
+from .routes import dashboard, pipeline, regs
 from .telemetry import TelemetryMiddleware
 
 # ── env validation ──────────────────────────────────────────────────
@@ -92,6 +94,7 @@ def index_old(request: Request):
 def health():
     """Health check do sistema."""
     from sqlalchemy import text
+
     from .database import SessionLocal
 
     db_ok = False
@@ -102,7 +105,7 @@ def health():
             db_ok = True
         finally:
             db.close()
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
 
     status = "ok" if db_ok else "degraded"

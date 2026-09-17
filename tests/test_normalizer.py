@@ -1,4 +1,5 @@
 """Tests for processor/normalizer.py."""
+
 from __future__ import annotations
 
 from processor.normalizer import normalize

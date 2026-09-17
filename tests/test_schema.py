@@ -1,4 +1,5 @@
 """Tests for processor/schema.py — Pydantic models."""
+
 from __future__ import annotations
 
 from processor.schema import (
@@ -11,14 +12,14 @@ from processor.schema import (
 
 class TestEnums:
     def test_aplicacao_values(self):
-        assert set(a.value for a in Aplicacao) == {"D", "I", "NP"}
+        assert {a.value for a in Aplicacao} == {"D", "I", "NP"}
 
     def test_status_values(self):
-        assert set(s.value for s in Status) == {"R", "N"}
+        assert {s.value for s in Status} == {"R", "N"}
 
     def test_assunto_values(self):
         expected = {"SEG", "INC", "COM", "NAV", "CON", "TRI", "AMB", "NAU", "IMO"}
-        assert set(a.value for a in Assunto) == expected
+        assert {a.value for a in Assunto} == expected
 
 
 class TestRegulatoryAnalysis:
@@ -47,6 +48,7 @@ class TestRegulatoryAnalysis:
     def test_invalid_enum_raises(self):
         import pytest
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError):
             RegulatoryAnalysis(assunto="INVALIDO")
 

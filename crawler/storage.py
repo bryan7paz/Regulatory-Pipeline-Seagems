@@ -1,4 +1,5 @@
 """Local persistence for crawler state and the pending download queue."""
+
 from __future__ import annotations
 
 import hashlib

@@ -1,14 +1,15 @@
 """Spider registry: maps a source config to a concrete spider instance."""
+
 from __future__ import annotations
 
 from typing import Any
 
+from .adapters import ADAPTER_MAP
 from .base import BaseSpider
 from .html_list import HtmlListSpider
+from .login import LoginSpider
 from .pdf_list import PdfListSpider
 from .sitemap import SitemapSpider
-from .login import LoginSpider
-from .adapters import ADAPTER_MAP
 
 TYPE_MAP: dict[str, type[BaseSpider]] = {
     "html_list": HtmlListSpider,

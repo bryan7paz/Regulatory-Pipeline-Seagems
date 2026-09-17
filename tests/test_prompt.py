@@ -1,4 +1,5 @@
 """Tests for processor/prompt_builder.py."""
+
 from __future__ import annotations
 
 from processor.prompt_builder import build_prompt

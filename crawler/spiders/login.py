@@ -3,12 +3,12 @@
 Uses Playwright to log in with credentials from the environment (defined in
 ``sources.yaml`` ``auth`` block), then extracts document links from the page.
 """
+
 from __future__ import annotations
 
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
-
 from core.config import load_env
 
 from .base import BaseSpider, Item
@@ -26,12 +26,12 @@ class LoginSpider(BaseSpider):
         password = env.get(auth.get("password_env", "IMODOCS_PASSWORD"), "")
 
         if not user or not password:
-            raise RuntimeError(
-                f"Credenciais não configuradas para a fonte {self.source_id}"
-            )
+            raise RuntimeError(f"Credenciais não configuradas para a fonte {self.source_id}")
 
         login_url = auth.get("login_url", self.url)
-        user_sel = auth.get("username_selector", "input[type=text], input[name*=user i], input[name*=login i]")
+        user_sel = auth.get(
+            "username_selector", "input[type=text], input[name*=user i], input[name*=login i]"
+        )
         pass_sel = auth.get("password_selector", "input[type=password]")
         submit_sel = auth.get("submit_selector", "button[type=submit], input[type=submit]")
 
@@ -43,7 +43,7 @@ class LoginSpider(BaseSpider):
                 await page.fill(pass_sel, password, timeout=10000)
                 await page.click(submit_sel, timeout=10000)
                 await page.wait_for_load_state("networkidle", timeout=30000)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 raise RuntimeError(f"Falha no login em {self.source_id}: {exc}") from exc
 
             if self.url != login_url:

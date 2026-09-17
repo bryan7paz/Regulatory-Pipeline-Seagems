@@ -1,9 +1,10 @@
 """Shared Playwright browser pool — reuse one Chromium instance across requests."""
+
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from core.config import logger
 

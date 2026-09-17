@@ -1,4 +1,5 @@
 """LLM gateway — dispatches to the active provider via core.llm_providers."""
+
 from __future__ import annotations
 
 from typing import Any

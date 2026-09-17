@@ -1,4 +1,5 @@
 """Text extraction from documents (PDF via PyMuPDF, HTML via BeautifulSoup)."""
+
 from __future__ import annotations
 
 from pathlib import Path

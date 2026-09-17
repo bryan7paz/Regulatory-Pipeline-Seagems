@@ -1,4 +1,5 @@
 """OpenTelemetry observability — tracing and metrics."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -21,9 +22,9 @@ def setup_telemetry(app_name: str = "regulatory-pipeline") -> Any:
 
     try:
         from opentelemetry import trace
+        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-        from opentelemetry.sdk.resources import Resource, SERVICE_NAME
 
         resource = Resource.create({SERVICE_NAME: app_name})
         provider = TracerProvider(resource=resource)
@@ -48,5 +49,7 @@ def setup_telemetry(app_name: str = "regulatory-pipeline") -> Any:
         return provider
 
     except ImportError:
-        logger.warning("OpenTelemetry não instalado. Instale: pip install opentelemetry-api opentelemetry-sdk")
+        logger.warning(
+            "OpenTelemetry não instalado. Instale: pip install opentelemetry-api opentelemetry-sdk"
+        )
         return None

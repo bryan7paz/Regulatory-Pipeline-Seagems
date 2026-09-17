@@ -1,26 +1,27 @@
 """initial schema
 
 Revision ID: 0767ea201e62
-Revises: 
+Revises:
 Create Date: 2026-09-17 13:19:47.701330
 
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '0767ea201e62'
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision: str = "0767ea201e62"
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    assunto_enum = sa.Enum("SEG", "INC", "COM", "NAV", "CON", "TRI", "AMB", "NAU", "IMO",
-                           name="assunto_enum")
+    assunto_enum = sa.Enum(
+        "SEG", "INC", "COM", "NAV", "CON", "TRI", "AMB", "NAU", "IMO", name="assunto_enum"
+    )
     aplicacao_enum = sa.Enum("D", "I", "NP", name="aplicacao_enum")
     status_enum = sa.Enum("R", "N", name="status_enum")
 

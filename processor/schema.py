@@ -5,10 +5,10 @@ Mirrors the spreadsheet columns:
     Data Publicacao | Entrada Em Vigor | Requisito | Norma | Assunto |
     Aplicacao | Status | Item | Itens Modificados / Objetivos | Acao Sugerida
 """
+
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -39,21 +39,21 @@ class Assunto(str, Enum):
 class RegulatoryAnalysis(BaseModel):
     """Structured output produced by the LLM."""
 
-    data_publicacao: Optional[str] = Field(
+    data_publicacao: str | None = Field(
         None, description="Data de elaboração/publicação no formato AAAA-MM-DD"
     )
-    entrada_em_vigor: Optional[str] = Field(
+    entrada_em_vigor: str | None = Field(
         None, description="Data de entrada em vigor no formato AAAA-MM-DD"
     )
-    requisito: Optional[str] = Field(None, description="Autoridade/fonte emissora")
-    norma: Optional[str] = Field(None, description="Código + título da norma")
-    assunto: Optional[Assunto] = Field(None, description="Categoria do assunto (sigla)")
-    aplicacao: Optional[Aplicacao] = Field(
+    requisito: str | None = Field(None, description="Autoridade/fonte emissora")
+    norma: str | None = Field(None, description="Código + título da norma")
+    assunto: Assunto | None = Field(None, description="Categoria do assunto (sigla)")
+    aplicacao: Aplicacao | None = Field(
         None, description="D (direta), I (indireta) ou NP (não pertinente)"
     )
-    status: Optional[Status] = Field(None, description="R (revisão) ou N (nova versão)")
-    item: Optional[str] = Field(None, description="Item/trecho específico alterado")
-    itens_modificados: Optional[str] = Field(None, description="Descrição do que mudou")
-    acao_sugerida: Optional[str] = Field(None, description="Ação recomendada para a equipe")
+    status: Status | None = Field(None, description="R (revisão) ou N (nova versão)")
+    item: str | None = Field(None, description="Item/trecho específico alterado")
+    itens_modificados: str | None = Field(None, description="Descrição do que mudou")
+    acao_sugerida: str | None = Field(None, description="Ação recomendada para a equipe")
 
     model_config = ConfigDict(use_enum_values=True)

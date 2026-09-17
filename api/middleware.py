@@ -1,14 +1,14 @@
 """API key authentication and rate limiting middleware."""
+
 from __future__ import annotations
 
 import hashlib
 import time
 from collections import defaultdict
 
+from core.config import load_env, logger
 from fastapi import HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
-
-from core.config import load_env, logger
 
 # ── API Key Auth ─────────────────────────────────────────────────────
 
@@ -100,6 +100,7 @@ api_key_auth = APIKeyAuth()
 
 # ── Rate Limiter ─────────────────────────────────────────────────────
 
+
 class RateLimiter:
     """Simple in-memory rate limiter using sliding window."""
 
@@ -127,9 +128,7 @@ class RateLimiter:
         now = time.time()
 
         # Check per-minute limit
-        self._minute_windows[client] = self._cleanup(
-            self._minute_windows[client], 60
-        )
+        self._minute_windows[client] = self._cleanup(self._minute_windows[client], 60)
         if len(self._minute_windows[client]) >= self.rpm:
             retry_after = int(self._minute_windows[client][0] + 60 - now) + 1
             raise HTTPException(
@@ -139,9 +138,7 @@ class RateLimiter:
             )
 
         # Check per-hour limit
-        self._hour_windows[client] = self._cleanup(
-            self._hour_windows[client], 3600
-        )
+        self._hour_windows[client] = self._cleanup(self._hour_windows[client], 3600)
         if len(self._hour_windows[client]) >= self.rph:
             retry_after = int(self._hour_windows[client][0] + 3600 - now) + 1
             raise HTTPException(

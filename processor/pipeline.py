@@ -1,4 +1,5 @@
 """End-to-end processing pipeline: queue -> extract -> LLM -> normalized record."""
+
 from __future__ import annotations
 
 import json
@@ -49,7 +50,7 @@ def process_all() -> list[dict[str, Any]]:
     for record in read_queue():
         try:
             results.append(process_record(record))
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             print(f"[processor] error on {record.get('url')}: {exc}")
     return results
 

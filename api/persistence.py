@@ -1,4 +1,5 @@
 """Shared persistence helpers for saving processed analyses to the database."""
+
 from __future__ import annotations
 
 import json

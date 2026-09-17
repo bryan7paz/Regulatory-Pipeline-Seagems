@@ -1,4 +1,5 @@
 """Normalization: validate LLM output against the Pydantic schema."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -21,6 +22,6 @@ def normalize(raw: dict[str, Any]) -> RegulatoryAnalysis:
 
     try:
         return RegulatoryAnalysis(**data)
-    except Exception:  # noqa: BLE001
+    except Exception:
         safe = {k: v for k, v in data.items() if k not in ENUM_FIELDS}
         return RegulatoryAnalysis(**safe)

@@ -1,4 +1,5 @@
 """E2E tests for the dashboard."""
+
 from __future__ import annotations
 
 import pytest
@@ -46,7 +47,7 @@ class TestDashboard:
         try:
             page.goto(base_url, wait_until="domcontentloaded")
             # Click on documents nav link
-            page.click('text=Documentos')
+            page.click("text=Documentos")
             page.wait_for_timeout(500)
             # Verify section is visible
             content = page.content()
@@ -59,7 +60,7 @@ class TestDashboard:
         page = page_context.new_page()
         try:
             page.goto(base_url, wait_until="domcontentloaded")
-            page.click('text=Pipeline')
+            page.click("text=Pipeline")
             page.wait_for_timeout(500)
             content = page.content()
             assert "Pipeline" in content
@@ -71,7 +72,7 @@ class TestDashboard:
         page = page_context.new_page()
         try:
             page.goto(base_url, wait_until="domcontentloaded")
-            page.click('text=Provedores IA')
+            page.click("text=Provedores IA")
             page.wait_for_timeout(500)
             content = page.content()
             assert "Provedores" in content
@@ -83,7 +84,7 @@ class TestDashboard:
         page = page_context.new_page()
         try:
             page.goto(base_url, wait_until="domcontentloaded")
-            page.click('text=Configurações')
+            page.click("text=Configurações")
             page.wait_for_timeout(500)
             content = page.content()
             assert "Configurações" in content or "Chaves" in content

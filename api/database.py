@@ -27,9 +27,8 @@ if DATABASE_URL and "sqlite" not in DATABASE_URL:
     except Exception:
         logger.warning("PostgreSQL indisponível, usando SQLite local")
         DATABASE_URL = ""
-        _is_sqlite = True
 
-if not DATABASE_URL or _is_sqlite:
+if engine is None:
     _is_sqlite = True
     _db_path = Path(__file__).resolve().parent.parent / "data" / "regulatory.db"
     _db_path.parent.mkdir(parents=True, exist_ok=True)

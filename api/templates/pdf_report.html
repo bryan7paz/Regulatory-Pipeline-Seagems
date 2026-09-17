@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Regulatório — Seagems</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm;
+            @bottom-center {
+                content: "Seagems — Relatório Regulatório | Página " counter(page) " de " counter(pages);
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10pt; color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0d6efd; padding-bottom: 12px; margin-bottom: 20px; }
+        .header h1 { font-size: 18pt; color: #0d6efd; }
+        .header .meta { text-align: right; font-size: 9pt; color: #666; }
+        .filters { background: #f8f9fa; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 9pt; }
+        .filters strong { color: #0d6efd; }
+        table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+        th { background: #0d6efd; color: white; padding: 8px 6px; text-align: left; font-weight: 600; }
+        td { padding: 6px; border-bottom: 1px solid #dee2e6; vertical-align: top; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #e9ecef; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 600; }
+        .badge-d { background: #198754; color: white; }
+        .badge-i { background: #ffc107; color: #333; }
+        .badge-np { background: #6c757d; color: white; }
+        .badge-r { background: #dc3545; color: white; }
+        .badge-n { background: #0d6efd; color: white; }
+        .badge-aprovado { background: #198754; color: white; }
+        .badge-reprovado { background: #dc3545; color: white; }
+        .badge-pendente { background: #ffc107; color: #333; }
+        .summary { display: flex; gap: 20px; margin-bottom: 20px; }
+        .summary-card { flex: 1; background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 4px solid #0d6efd; }
+        .summary-card h3 { font-size: 9pt; color: #666; margin-bottom: 4px; }
+        .summary-card .value { font-size: 20pt; font-weight: 700; color: #0d6efd; }
+        .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #dee2e6; font-size: 8pt; color: #999; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>Regulatório — Análise</h1>
+            <p style="font-size: 10pt; color: #666;">Monitoramento Automatizado de Normas Marítimas</p>
+        </div>
+        <div class="meta">
+            <p><strong>Seagems</strong></p>
+            <p>Gerado em: {{ generated_at }}</p>
+            {% if filters %}
+            <p>Filtros: {{ filters }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="summary">
+        <div class="summary-card">
+            <h3>Total de Registros</h3>
+            <div class="value">{{ total }}</div>
+        </div>
+        <div class="summary-card">
+            <h3>Aprovados</h3>
+            <div class="value">{{ approved }}</div>
+        </div>
+        <div class="summary-card">
+            <h3>Reprovados</h3>
+            <div class="value">{{ rejected }}</div>
+        </div>
+        <div class="summary-card">
+            <h3>Pendentes</h3>
+            <div class="value">{{ pending }}</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fonte</th>
+                <th>Norma</th>
+                <th>Assunto</th>
+                <th>Aplicação</th>
+                <th>Status</th>
+                <th>Requisito</th>
+                <th>Ação Sugerida</th>
+                <th>Validação</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.source_name or item.source_id or '—' }}</td>
+                <td><strong>{{ item.norma or '—' }}</strong></td>
+                <td>{{ item.assunto or '—' }}</td>
+                <td>
+                    {% if item.aplicacao == 'D' %}
+                        <span class="badge badge-d">D — Direta</span>
+                    {% elif item.aplicacao == 'I' %}
+                        <span class="badge badge-i">I — Indireta</span>
+                    {% elif item.aplicacao == 'NP' %}
+                        <span class="badge badge-np">NP — Não Pertinente</span>
+                    {% else %}
+                        {{ item.aplicacao or '—' }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.status == 'R' %}
+                        <span class="badge badge-r">R — Revisão</span>
+                    {% elif item.status == 'N' %}
+                        <span class="badge badge-n">N — Nova Versão</span>
+                    {% else %}
+                        {{ item.status or '—' }}
+                    {% endif %}
+                </td>
+                <td>{{ item.requisito or '—' }}</td>
+                <td>{{ item.acao_sugerida or '—' }}</td>
+                <td>
+                    {% if item.status_validacao == 'aprovado' %}
+                        <span class="badge badge-aprovado">Aprovado</span>
+                    {% elif item.status_validacao == 'reprovado' %}
+                        <span class="badge badge-reprovado">Reprovado</span>
+                    {% else %}
+                        <span class="badge badge-pendente">Pendente</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Seagems — Sistema de Monitoramento Regulatório Marítimo | Documento gerado automaticamente
+    </div>
+</body>
+</html>

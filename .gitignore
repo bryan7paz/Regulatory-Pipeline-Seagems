@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Segredos
+config/secrets.env
+
+# Dados gerados em runtime
+data/
+crawler/state/
+*.log
+*.db
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Bandit reports
+bandit-report.json
+
+# Environment
+.env
+.env.local

@@ -1,0 +1,52 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+        flags:
+          - unittests
+    patch:
+      default:
+        target: 80%
+        threshold: 10%
+
+flags:
+  unittests:
+    paths:
+      - core/
+      - crawler/
+      - processor/
+      - api/
+    carryforward: true
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+ignore:
+  - "tests/**/*"
+  - "alembic/**/*"
+  - "config/**/*"
+  - "data/**/*"
+  - "docs/**/*"
+  - "**/__pycache__/**"
+  - "**/*.pyc"

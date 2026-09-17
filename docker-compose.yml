@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: regulatory_pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: regulatory
+      POSTGRES_PASSWORD: regulatory
+      POSTGRES_DB: regulatory
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: regulatory_app
+    restart: unless-stopped
+    env_file:
+      - config/secrets.env
+    environment:
+      DATABASE_URL: "postgresql://regulatory:regulatory@postgres:5432/regulatory"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - postgres
+    volumes:
+      - ./data:/app/data
+      - ./crawler/state:/app/crawler/state
+
+volumes:
+  pgdata:

@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seagems — Painel Regulatório</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    :root { --sidebar-w: 220px; }
+    body { overflow-x: hidden; }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: #1a1d23; color: #c1c2c5;
+      transition: transform .25s;
+      z-index: 1040;
+    }
+    .sidebar .brand { padding: 1.25rem 1rem; font-weight: 700; font-size: 1.05rem;
+      color: #fff; border-bottom: 1px solid #2c2f36; }
+    .sidebar .nav-link {
+      color: #909296; padding: .6rem 1rem; font-size: .9rem;
+      display: flex; align-items: center; gap: .6rem;
+      border-left: 3px solid transparent; transition: all .15s;
+    }
+    .sidebar .nav-link:hover { color: #fff; background: #252830; }
+    .sidebar .nav-link.active { color: #4dabf7; border-left-color: #4dabf7; background: #1e2128; }
+    .sidebar .nav-link i { font-size: 1.1rem; width: 1.3rem; text-align: center; }
+
+    /* ── Main ────────────────────────────────────────── */
+    .main { margin-left: var(--sidebar-w); padding: 1rem 1.5rem 2rem; transition: margin .25s; }
+
+    /* ── KPI Cards ───────────────────────────────────── */
+    .kpi-card {
+      border: none; border-radius: .75rem;
+      padding: 1.1rem 1.25rem; color: #fff;
+    }
+    .kpi-card .kpi-icon { font-size: 2rem; opacity: .85; }
+    .kpi-card .kpi-value { font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+    .kpi-card .kpi-label { font-size: .8rem; opacity: .8; text-transform: uppercase; letter-spacing: .04em; }
+    .kpi-total { background: linear-gradient(135deg, #339af0, #1c7ed6); }
+    .kpi-pendente { background: linear-gradient(135deg, #fcc419, #f08c00); }
+    .kpi-aprovado { background: linear-gradient(135deg, #51cf66, #2f9e44); }
+    .kpi-reprovado { background: linear-gradient(135deg, #ff6b6b, #e03131); }
+
+    /* ── Pipeline Panel ──────────────────────────────── */
+    #pipeline-panel {
+      border: 1px solid #dee2e6; border-radius: .75rem;
+      padding: 1rem 1.25rem; background: #fff;
+    }
+    [data-bs-theme="dark"] #pipeline-panel { background: #21252b; border-color: #373a40; }
+    #pipeline-log {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: .78rem; background: #1a1d23; color: #a6e3a1;
+      border-radius: .5rem; padding: .75rem; max-height: 180px;
+      overflow-y: auto; white-space: pre-wrap; display: none;
+    }
+    .progress-bar-animated { transition: width .4s ease; }
+
+    /* ── Table ───────────────────────────────────────── */
+    .table-hover tbody tr { cursor: pointer; transition: background .12s; }
+    .table-hover tbody tr:hover { background: #e7f5ff !important; }
+    [data-bs-theme="dark"] .table-hover tbody tr:hover { background: #2c3040 !important; }
+
+    /* ── Badges ──────────────────────────────────────── */
+    .badge-assunto { font-size: .72rem; font-weight: 600; }
+    .badge-aplicacao { font-size: .72rem; font-weight: 600; }
+
+    /* ── Toast ───────────────────────────────────────── */
+    .toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 1100; }
+
+    /* ── Mobile ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.show { transform: translateX(0); }
+      .main { margin-left: 0; padding: 1rem; }
+      .sidebar-overlay { display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.45); z-index: 1035; }
+      .sidebar-overlay.show { display: block; }
+    }
+
+    /* ── Skeleton loading ─────────────────────────────── */
+    .skeleton { background: linear-gradient(90deg, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: .3rem; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    [data-bs-theme="dark"] .skeleton { background: linear-gradient(90deg, #2c2f36 25%, #343a40 50%, #2c2f36 75%);
+      background-size: 200% 100%; }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar Overlay (mobile) ──────────────────────── -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- ── Sidebar ───────────────────────────────────────── -->
+<nav class="sidebar" id="sidebar">
+  <div class="brand">
+    <i class="bi bi-water me-2"></i>Seagems
+  </div>
+  <ul class="nav flex-column mt-3">
+    <li class="nav-item">
+      <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+        <i class="bi bi-speedometer2"></i> Dashboard
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#" onclick="showSection('documents')">
+        <i class="bi bi-file-earmark-text"></i> Documentos
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#" onclick="showSection('pipeline')">
+        <i class="bi bi-gear-wide-connected"></i> Pipeline
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#" onclick="showSection('queue')">
+        <i class="bi bi-list-task"></i> Fila
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#" onclick="showSection('providers')">
+        <i class="bi bi-cpu"></i> Provedores IA
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="#" onclick="showSection('settings')">
+        <i class="bi bi-gear"></i> Configurações
+      </a>
+    </li>
+  </ul>
+  <div class="mt-auto p-3">
+    <button class="btn btn-sm btn-outline-light w-100" onclick="toggleTheme()">
+      <i class="bi bi-moon-stars" id="themeIcon"></i> <span id="themeLabel">Escuro</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ── Main Content ──────────────────────────────────── -->
+<div class="main">
+
+  <!-- Top bar -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+      </button>
+      <h5 class="mb-0" id="pageTitle">Dashboard</h5>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted small" id="dbStatus"></span>
+      <button class="btn btn-sm btn-primary" onclick="runPipeline()" id="btnRun">
+        <i class="bi bi-play-fill"></i> Rodar Pipeline
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DASHBOARD SECTION ═══════════════ -->
+  <section id="sec-dashboard">
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3">
+        <div class="kpi-card kpi-total">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="kpi-value" id="kpiTotal">—</div>
+              <div class="kpi-label">Total</div>
+            </div>
+            <i class="bi bi-files kpi-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="kpi-card kpi-pendente">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="kpi-value" id="kpiPendente">—</div>
+              <div class="kpi-label">Pendentes</div>
+            </div>
+            <i class="bi bi-hourglass-split kpi-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="kpi-card kpi-aprovado">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="kpi-value" id="kpiAprovado">—</div>
+              <div class="kpi-label">Aprovados</div>
+            </div>
+            <i class="bi bi-check-circle kpi-icon"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="kpi-card kpi-reprovado">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="kpi-value" id="kpiReprovado">—</div>
+              <div class="kpi-label">Reprovados</div>
+            </div>
+            <i class="bi bi-x-circle kpi-icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title"><i class="bi bi-pie-chart me-2"></i>Por Assunto</h6>
+            <div style="height:240px"><canvas id="chartAssunto"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title"><i class="bi bi-bar-chart me-2"></i>Por Aplicação</h6>
+            <div style="height:240px"><canvas id="chartAplicacao"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline status mini -->
+    <div class="card border-0 shadow-sm mb-4" id="pipeline-panel">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="card-title mb-0"><i class="bi bi-gear-wide-connected me-2"></i>Pipeline</h6>
+          <span class="badge bg-secondary" id="pipelineBadge">Parado</span>
+        </div>
+        <div class="mt-2">
+          <div class="progress" style="height:6px" id="pipelineProgress" style="display:none">
+            <div class="progress-bar progress-bar-animated bg-primary" id="pipelineBar" style="width:0%"></div>
+          </div>
+          <small class="text-muted" id="pipelineInfo">Último: nunca</small>
+        </div>
+        <div id="pipeline-log"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════ DOCUMENTS SECTION ═══════════════ -->
+  <section id="sec-documents" style="display:none">
+
+    <!-- Search + Filters -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body py-2">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <input type="text" class="form-control form-control-sm" id="searchInput"
+                   placeholder="Buscar norma, requisito, ação..." onkeyup="debounceSearch()">
+          </div>
+          <div class="col-auto">
+            <select class="form-select form-select-sm" id="filterAssunto" onchange="loadDocs(1)">
+              <option value="">Assunto</option>
+              <option value="SEG">SEG - Segurança</option>
+              <option value="INC">INC - Incêndio</option>
+              <option value="COM">COM - Comunicação</option>
+              <option value="NAV">NAV - Navegação</option>
+              <option value="CON">CON - Construção</option>
+              <option value="TRI">TRI - Tripulação</option>
+              <option value="AMB">AMB - Meio Ambiente</option>
+              <option value="NAU">NAU - Naufrágio</option>
+              <option value="IMO">IMO - Convenções</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <select class="form-select form-select-sm" id="filterAplicacao" onchange="loadDocs(1)">
+              <option value="">Aplicação</option>
+              <option value="D">D - Direta</option>
+              <option value="I">I - Indireta</option>
+              <option value="NP">NP - Não Pertinente</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <select class="form-select form-select-sm" id="filterValidacao" onchange="loadDocs(1)">
+              <option value="">Validação</option>
+              <option value="pendente">Pendente</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="reprovado">Reprovado</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <select class="form-select form-select-sm" id="filterFonte" onchange="loadDocs(1)">
+              <option value="">Fonte</option>
+              <option value="iacs">IACS</option>
+              <option value="imca">IMCA</option>
+              <option value="mte">MTE</option>
+              <option value="panama">Panama</option>
+              <option value="imodocs">IMODOCS</option>
+              <option value="dpc">DPC</option>
+            </select>
+          </div>
+          <div class="col-auto ms-auto">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-success" onclick="batchValidate('aprovado')" title="Aprovar selecionados">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <button class="btn btn-outline-danger" onclick="batchValidate('reprovado')" title="Reprovar selecionados">
+                <i class="bi bi-x-lg"></i>
+              </button>
+              <a class="btn btn-outline-secondary" href="/regs/export/csv" title="Exportar CSV">
+                <i class="bi bi-download"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th width="30"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+              <th>Data</th>
+              <th>Norma</th>
+              <th>Assunto</th>
+              <th>Aplicação</th>
+              <th>Status</th>
+              <th>Ação Sugerida</th>
+              <th>Validação</th>
+              <th width="80">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="docsBody">
+            <tr><td colspan="9" class="text-center text-muted py-4">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Pagination -->
+      <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted" id="docsInfo">—</small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0" id="docsPagination"></ul>
+        </nav>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════ PIPELINE SECTION ═══════════════ -->
+  <section id="sec-pipeline" style="display:none">
+    <div class="row g-4">
+      <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6>Controle do Pipeline</h6>
+            <p class="text-muted small">Execute o pipeline completo (crawl + process + persist) ou apenas processe a fila.</p>
+            <div class="d-flex gap-2 mb-3">
+              <button class="btn btn-primary" onclick="runPipeline()" id="btnRun2">
+                <i class="bi bi-play-fill"></i> Rodar Pipeline Completo
+              </button>
+              <button class="btn btn-outline-primary" onclick="processQueue()" id="btnProcess">
+                <i class="bi bi-cpu"></i> Processar Fila
+              </button>
+            </div>
+            <div class="progress mb-2" style="height:8px" id="pipelineProgress2">
+              <div class="progress-bar progress-bar-animated bg-primary" id="pipelineBar2" style="width:0%"></div>
+            </div>
+            <div id="pipelineStatus2" class="text-muted small"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6>Status</h6>
+            <dl class="row mb-0 small">
+              <dt class="col-6">Fila:</dt><dd class="col-6" id="statQueue">—</dd>
+              <dt class="col-6">Persistidos:</dt><dd class="col-6" id="statPersisted">—</dd>
+              <dt class="col-6">Último run:</dt><dd class="col-6" id="statLastRun">—</dd>
+              <dt class="col-6">Erros:</dt><dd class="col-6" id="statErrors">—</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-3">
+      <h6>Log</h6>
+      <div id="pipeline-log2" style="font-family:monospace; font-size:.8rem; background:#1a1d23; color:#a6e3a1;
+        border-radius:.5rem; padding:.75rem; min-height:200px; max-height:400px; overflow-y:auto;"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ QUEUE SECTION ═══════════════ -->
+  <section id="sec-queue" style="display:none">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6>Itens na Fila</h6>
+        <p class="text-muted small">Documentos baixados aguardando processamento.</p>
+        <div id="queueList" class="text-muted">Carregando...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ PROVIDERS SECTION ═══════════════ -->
+  <section id="sec-providers" style="display:none">
+    <div class="row g-4">
+      <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6><i class="bi bi-cpu me-2"></i>Provedores de IA</h6>
+            <p class="text-muted small mb-3">Selecione qual provedor LLM usar para processar documentos. O sistema tenta o ativo primeiro e faz fallback automaticamente.</p>
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Provedor</th>
+                    <th>Modelo</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="providersBody">
+                  <tr><td colspan="4" class="text-center text-muted py-3">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6>Provedor Ativo</h6>
+            <div id="activeProviderInfo" class="text-muted">—</div>
+            <hr>
+            <h6>Fallback Chain</h6>
+            <div id="fallbackInfo" class="text-muted small">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ SETTINGS SECTION ═══════════════ -->
+  <section id="sec-settings" style="display:none">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6><i class="bi bi-key me-2"></i>Chaves de API — LLM</h6>
+            <p class="text-muted small">Preencha ao menos uma chave para usar o pipeline.</p>
+            <form id="settingsForm" onsubmit="saveSettings(event)">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Groq (gratuito, rápido)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-key"></i></span>
+                  <input type="password" class="form-control" id="cfg-GROQ_API_KEY" placeholder="gsk_...">
+                </div>
+                <small class="text-muted">https://console.groq.com</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">NVIDIA NIM (gratuito)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-key"></i></span>
+                  <input type="password" class="form-control" id="cfg-NVIDIA_API_KEY" placeholder="nvapi-...">
+                </div>
+                <small class="text-muted">https://build.nvidia.com</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">OpenRouter (modelos gratuitos)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-key"></i></span>
+                  <input type="password" class="form-control" id="cfg-OPENROUTER_API_KEY" placeholder="sk-or-...">
+                </div>
+                <small class="text-muted">https://openrouter.ai</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Google Gemini (gratuito)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-key"></i></span>
+                  <input type="password" class="form-control" id="cfg-GOOGLE_API_KEY" placeholder="AIza...">
+                </div>
+                <small class="text-muted">https://aistudio.google.com</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Cerebras (gratuito)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-key"></i></span>
+                  <input type="password" class="form-control" id="cfg-CEREBRAS_API_KEY" placeholder="csk-...">
+                </div>
+                <small class="text-muted">https://cloud.cerebras.ai</small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Mistral (gratuito tier)</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text"><i class="bi bi-key"></i></span>
+                  <input type="password" class="form-control" id="cfg-MISTRAL_API_KEY" placeholder="...">
+                </div>
+                <small class="text-muted">https://console.mistral.ai</small>
+              </div>
+              <hr>
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-save"></i> Salvar Chaves
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6><i class="bi bi-database me-2"></i>Banco de Dados</h6>
+            <form onsubmit="saveSettings(event)">
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">DATABASE_URL</label>
+                <input type="text" class="form-control form-control-sm" id="cfg-DATABASE_URL"
+                       placeholder="postgresql://regulatory:regulatory@localhost:5432/regulatory">
+              </div>
+              <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-save"></i> Salvar
+              </button>
+            </form>
+            <hr>
+            <h6><i class="bi bi-calendar me-2"></i>Scheduler</h6>
+            <form onsubmit="saveSettings(event)">
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">Hora</label>
+                  <input type="number" class="form-control form-control-sm" id="cfg-SCHEDULE_HOUR" min="0" max="23" value="06">
+                </div>
+                <div class="col-6">
+                  <label class="form-label small fw-semibold">Fuso</label>
+                  <input type="text" class="form-control form-control-sm" id="cfg-SCHEDULE_TIMEZONE" value="America/Sao_Paulo">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-save"></i> Salvar
+              </button>
+            </form>
+            <hr>
+            <h6><i class="bi bi-box-arrow-in-right me-2"></i>IMODOCS (opcional)</h6>
+            <form onsubmit="saveSettings(event)">
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">Usuário</label>
+                <input type="text" class="form-control form-control-sm" id="cfg-IMODOCS_USER" placeholder="login">
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Senha</label>
+                <input type="password" class="form-control form-control-sm" id="cfg-IMODOCS_PASSWORD">
+              </div>
+              <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-save"></i> Salvar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /main -->
+
+<!-- ═══════════════ DETAIL MODAL ═══════════════ -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title" id="detailTitle">Detalhe</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detailBody">
+        <div class="skeleton" style="height:200px"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TOAST ═══════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ── Helpers ────────────────────────────────────────────────────
+function esc(s) { return s ? document.createTextNode(s).textContent : '—'; }
+const ASSUNTO_LABELS = {SEG:'Segurança',INC:'Incêndio',COM:'Comunicação',NAV:'Navegação',
+  CON:'Construção',TRI:'Tripulação',AMB:'Meio Ambiente',NAU:'Naufrágio',IMO:'Convenções IMO'};
+const ASSUNTO_COLORS = {SEG:'#339af0',INC:'#ff6b6b',COM:'#fcc419',NAV:'#51cf66',
+  CON:'#cc5de8',TRI:'#20c997',AMB:'#22b8cf',NAU:'#f06595',IMO:'#868e96'};
+const APP_COLORS = {D:'#51cf66',I:'#339af0',NP:'#868e96'};
+
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = `toast align-items-center text-bg-${type} border-0 show`;
+  el.innerHTML = `<div class="d-flex"><div class="toast-body">${esc(msg)}</div>
+    <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ── Theme ──────────────────────────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const dark = html.getAttribute('data-bs-theme') === 'dark';
+  html.setAttribute('data-bs-theme', dark ? 'light' : 'dark');
+  document.getElementById('themeIcon').className = dark ? 'bi bi-moon-stars' : 'bi bi-sun';
+  document.getElementById('themeLabel').textContent = dark ? 'Escuro' : 'Claro';
+  localStorage.setItem('theme', dark ? 'light' : 'dark');
+  loadMetrics();
+}
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved) { document.documentElement.setAttribute('data-bs-theme', saved);
+    if (saved === 'dark') { document.getElementById('themeIcon').className = 'bi bi-sun';
+      document.getElementById('themeLabel').textContent = 'Claro'; } }
+})();
+
+// ── Sidebar ────────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('show');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+
+// ── Sections ───────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('[id^="sec-"]').forEach(s => s.style.display = 'none');
+  document.getElementById('sec-' + name).style.display = '';
+  document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const titles = {dashboard:'Dashboard',documents:'Documentos',pipeline:'Pipeline',queue:'Fila',providers:'Provedores IA',settings:'Configurações'};
+  document.getElementById('pageTitle').textContent = titles[name] || name;
+  if (name === 'documents') loadDocs(1);
+  if (name === 'queue') loadQueue();
+  if (name === 'providers') loadProviders();
+  if (name === 'settings') loadSettings();
+  if (name === 'pipeline') refreshPipelineStatus();
+  toggleSidebar();
+}
+
+// ── KPI + Charts ───────────────────────────────────────────────
+let chartAssunto, chartAplicacao;
+
+function loadMetrics() {
+  fetch('/dashboard/metrics').then(r => r.json()).then(d => {
+    document.getElementById('kpiTotal').textContent = d.total || 0;
+    const v = d.por_validacao || {};
+    document.getElementById('kpiPendente').textContent = v.pendente || 0;
+    document.getElementById('kpiAprovado').textContent = v.aprovado || 0;
+    document.getElementById('kpiReprovado').textContent = v.reprovado || 0;
+    renderCharts(d);
+  }).catch(() => {});
+}
+
+function renderCharts(d) {
+  const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  const txtColor = isDark ? '#c1c2c5' : '#495057';
+  Chart.defaults.color = txtColor;
+
+  // Assunto
+  const pa = d.por_assunto || {};
+  const aLabels = Object.keys(pa);
+  const aData = Object.values(pa);
+  const aColors = aLabels.map(k => ASSUNTO_COLORS[k] || '#868e96');
+  if (chartAssunto) chartAssunto.destroy();
+  chartAssunto = new Chart(document.getElementById('chartAssunto'), {
+    type: 'doughnut',
+    data: { labels: aLabels.map(k => k + ' - ' + (ASSUNTO_LABELS[k]||k)),
+            datasets: [{ data: aData, backgroundColor: aColors, borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } } } }
+  });
+
+  // Aplicacao
+  const pp = d.por_aplicacao || {};
+  const pLabels = Object.keys(pp);
+  const pData = Object.values(pp);
+  const pColors = pLabels.map(k => APP_COLORS[k] || '#868e96');
+  const pNames = {D:'Direta (D)',I:'Indireta (I)',NP:'Não Pertinente (NP)'};
+  if (chartAplicacao) chartAplicacao.destroy();
+  chartAplicacao = new Chart(document.getElementById('chartAplicacao'), {
+    type: 'doughnut',
+    data: { labels: pLabels.map(k => pNames[k]||k),
+            datasets: [{ data: pData, backgroundColor: pColors, borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } } } }
+  });
+}
+
+// ── Documents Table ────────────────────────────────────────────
+let currentDocPage = 1;
+let searchTimer;
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadDocs(1), 350);
+}
+
+function loadDocs(page) {
+  currentDocPage = page || 1;
+  const q = document.getElementById('searchInput').value;
+  const assunto = document.getElementById('filterAssunto').value;
+  const aplicacao = document.getElementById('filterAplicacao').value;
+  const validacao = document.getElementById('filterValidacao').value;
+  const fonte = document.getElementById('filterFonte').value;
+
+  const params = new URLSearchParams({ page: currentDocPage, size: 15 });
+  if (q) params.set('q', q);
+  if (assunto) params.set('assunto', assunto);
+  if (aplicacao) params.set('aplicacao', aplicacao);
+  if (validacao) params.set('validacao', validacao);
+  if (fonte) params.set('fonte', fonte);
+
+  fetch('/regs/?' + params).then(r => r.json()).then(d => {
+    renderDocs(d);
+  }).catch(() => {
+    document.getElementById('docsBody').innerHTML =
+      '<tr><td colspan="9" class="text-center text-danger py-3">Erro ao carregar</td></tr>';
+  });
+}
+
+function renderDocs(d) {
+  const items = d.items || [];
+  const tbody = document.getElementById('docsBody');
+
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Nenhum documento encontrado</td></tr>';
+  } else {
+    tbody.innerHTML = items.map(r => `
+      <tr>
+        <td><input type="checkbox" class="doc-check" value="${esc(r.id)}"></td>
+        <td class="text-nowrap small">${esc(r.data_publicacao || '—')}</td>
+        <td><span class="fw-semibold">${esc(r.norma || '—')}</span><br>
+          <small class="text-muted">${esc(r.requisito || '')}</small></td>
+        <td><span class="badge badge-assunto bg-light text-dark border">${esc(r.assunto || '—')}</span></td>
+        <td><span class="badge badge-aplicacao ${r.aplicacao==='D'?'bg-success':r.aplicacao==='I'?'bg-info':'bg-secondary'}">${esc(r.aplicacao || '—')}</span></td>
+        <td><span class="badge ${r.status==='R'?'bg-warning text-dark':'bg-primary'}">${esc(r.status || '—')}</span></td>
+        <td class="small" style="max-width:250px">${esc(r.acao_sugerida || '—')}</td>
+        <td>${validationBadge(r)}</td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" onclick="showDetail('${esc(r.id)}')" title="Detalhe">
+              <i class="bi bi-eye"></i>
+            </button>
+            ${r.status_validacao === 'pendente' ? `
+              <button class="btn btn-outline-success" onclick="validateOne('${esc(r.id)}','aprovado')" title="Aprovar">
+                <i class="bi bi-check-lg"></i>
+              </button>
+              <button class="btn btn-outline-danger" onclick="validateOne('${esc(r.id)}','reprovado')" title="Reprovar">
+                <i class="bi bi-x-lg"></i>
+              </button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // Pagination
+  document.getElementById('docsInfo').textContent = `${d.total} registro(s) — Página ${d.page} de ${d.pages}`;
+  const pag = document.getElementById('docsPagination');
+  let html = '';
+  for (let i = 1; i <= d.pages; i++) {
+    html += `<li class="page-item ${i===d.page?'active':''}">
+      <a class="page-link" href="#" onclick="loadDocs(${i});return false">${i}</a></li>`;
+  }
+  pag.innerHTML = html;
+}
+
+function validationBadge(r) {
+  const v = r.status_validacao || 'pendente';
+  const cls = v === 'aprovado' ? 'bg-success' : v === 'reprovado' ? 'bg-danger' : 'bg-warning text-dark';
+  const label = v === 'aprovado' ? 'Aprovado' : v === 'reprovado' ? 'Reprovado' : 'Pendente';
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ── Validation ─────────────────────────────────────────────────
+function validateOne(id, action) {
+  fetch(`/regs/${id}/validate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, validated_by: 'especialista' })
+  }).then(r => { if (r.ok) { toast('Registro validado'); loadDocs(currentDocPage); loadMetrics(); }
+  }).catch(() => toast('Erro ao validar', 'danger'));
+}
+
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAll').checked;
+  document.querySelectorAll('.doc-check').forEach(c => c.checked = checked);
+}
+
+function batchValidate(action) {
+  const ids = [...document.querySelectorAll('.doc-check:checked')].map(c => c.value);
+  if (!ids.length) { toast('Selecione ao menos 1 registro', 'warning'); return; }
+  fetch('/regs/batch-validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids, action, validated_by: 'especialista' })
+  }).then(r => r.json()).then(d => {
+    toast(`${d.updated} registro(s) atualizado(s)`);
+    loadDocs(currentDocPage);
+    loadMetrics();
+  }).catch(() => toast('Erro na validação em lote', 'danger'));
+}
+
+// ── Detail Modal ───────────────────────────────────────────────
+function showDetail(id) {
+  const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+  document.getElementById('detailTitle').textContent = 'Carregando...';
+  document.getElementById('detailBody').innerHTML = '<div class="skeleton" style="height:200px"></div>';
+  modal.show();
+
+  fetch(`/regs/${id}`).then(r => r.json()).then(r => {
+    document.getElementById('detailTitle').textContent = r.norma || r.id;
+    let rawJson = '';
+    try { rawJson = JSON.stringify(JSON.parse(r.raw_json || '{}'), null, 2); } catch { rawJson = r.raw_json || '—'; }
+    document.getElementById('detailBody').innerHTML = `
+      <div class="row g-3">
+        <div class="col-md-6"><strong>Fonte:</strong> ${esc(r.source_name || r.source_id)}</div>
+        <div class="col-md-6"><strong>Publicação:</strong> ${esc(r.data_publicacao || '—')}</div>
+        <div class="col-md-6"><strong>Vigor:</strong> ${esc(r.entrada_em_vigor || '—')}</div>
+        <div class="col-md-6"><strong>Requisito:</strong> ${esc(r.requisito || '—')}</div>
+        <div class="col-12"><strong>Norma:</strong> ${esc(r.norma || '—')}</div>
+        <div class="col-md-3"><strong>Assunto:</strong> ${esc(r.assunto)}</div>
+        <div class="col-md-3"><strong>Aplicação:</strong> ${esc(r.aplicacao)}</div>
+        <div class="col-md-3"><strong>Status:</strong> ${esc(r.status)}</div>
+        <div class="col-md-3"><strong>Validação:</strong> ${esc(r.status_validacao)}</div>
+        <div class="col-12"><strong>Item:</strong> ${esc(r.item || '—')}</div>
+        <div class="col-12"><strong>Itens Modificados:</strong> ${esc(r.itens_modificados || '—')}</div>
+        <div class="col-12"><strong>Ação Sugerida:</strong> ${esc(r.acao_sugerida || '—')}</div>
+        <div class="col-12"><strong>URL:</strong> <a href="${esc(r.url_origem)}" target="_blank">${esc(r.url_origem || '—')}</a></div>
+      </div>
+      <hr>
+      <h6>JSON Bruto</h6>
+      <pre class="bg-dark text-light p-3 rounded" style="font-size:.75rem; max-height:300px; overflow:auto">${esc(rawJson)}</pre>
+    `;
+  });
+}
+
+// ── Pipeline ───────────────────────────────────────────────────
+let sseSource;
+
+function runPipeline() {
+  fetch('/pipeline/run', { method: 'POST' }).then(r => r.json()).then(d => {
+    if (d.ok) { toast('Pipeline iniciado'); startSSE(); }
+    else toast(d.error || 'Erro', 'warning');
+  }).catch(() => toast('Erro ao iniciar pipeline', 'danger'));
+}
+
+function processQueue() {
+  toast('Processando fila...', 'info');
+  fetch('/pipeline/process', { method: 'POST' }).then(r => r.json()).then(d => {
+    if (d.ok) { toast('Processamento iniciado'); startSSE(); }
+    else toast(d.error || 'Erro', 'warning');
+  }).catch(() => toast('Erro ao processar fila', 'danger'));
+}
+
+function startSSE() {
+  if (sseSource) sseSource.close();
+  sseSource = new EventSource('/pipeline/stream');
+  const log = document.getElementById('pipeline-log');
+  const log2 = document.getElementById('pipeline-log2');
+  log.style.display = 'block';
+  log.textContent = '';
+  if (log2) log2.textContent = '';
+
+  sseSource.onmessage = (e) => {
+    const s = JSON.parse(e.data);
+    // Update badges
+    const badge = document.getElementById('pipelineBadge');
+    if (s.running) { badge.textContent = 'Rodando'; badge.className = 'badge bg-primary'; }
+    else { badge.textContent = 'Parado'; badge.className = 'badge bg-secondary'; }
+
+    // Progress bar
+    const pct = s.total > 0 ? Math.round(s.processed / s.total * 100) : (s.running ? 10 : 0);
+    ['pipelineBar', 'pipelineBar2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.width = pct + '%'; el.textContent = pct + '%'; }
+    });
+
+    // Info
+    const info = document.getElementById('pipelineInfo');
+    if (s.running) info.textContent = `${s.step} — ${s.current}`;
+    else if (s.last_run) info.textContent = `Último: ${new Date(s.last_run).toLocaleString('pt-BR')}`;
+
+    const info2 = document.getElementById('pipelineStatus2');
+    if (info2) info2.textContent = s.running ? `${s.step}: ${s.current}` : 'Idle';
+
+    // Log
+    const line = s.running ? `[${s.step}] ${s.current}\n` : (s.last_run ? `[done] ${s.processed} processados\n` : '');
+    if (line) { log.textContent += line; log.scrollTop = log.scrollHeight; }
+    if (log2 && line) { log2.textContent += line; log2.scrollTop = log2.scrollHeight; }
+
+    if (!s.running && sseSource) { sseSource.close(); sseSource = null; loadMetrics(); }
+  };
+  sseSource.onerror = () => { sseSource.close(); sseSource = null; };
+}
+
+function refreshPipelineStatus() {
+  fetch('/pipeline/status').then(r => r.json()).then(s => {
+    document.getElementById('statQueue').textContent = s.queue_size || 0;
+    document.getElementById('statPersisted').textContent = s.docs_persisted || 0;
+    document.getElementById('statLastRun').textContent = s.last_run ? new Date(s.last_run).toLocaleString('pt-BR') : '—';
+    document.getElementById('statErrors').textContent = (s.errors || []).length;
+    if (s.running) startSSE();
+  });
+}
+
+// ── Queue ──────────────────────────────────────────────────────
+function loadQueue() {
+  fetch('/pipeline/status').then(r => r.json()).then(s => {
+    document.getElementById('queueList').innerHTML =
+      `<p class="mb-2"><strong>${s.queue_size}</strong> item(ns) na fila</p>` +
+      (s.queue_size > 0 ? '<p class="small text-muted">Execute o pipeline para processar.</p>' :
+       '<p class="text-success"><i class="bi bi-check-circle"></i> Fila vazia</p>');
+  });
+}
+
+// ── Providers ─────────────────────────────────────────────────
+function loadProviders() {
+  fetch('/pipeline/providers').then(r => r.json()).then(list => {
+    const tbody = document.getElementById('providersBody');
+    const active = list.find(p => p.active);
+    document.getElementById('activeProviderInfo').innerHTML = active ?
+      `<strong>${esc(active.name)}</strong><br><small class="text-muted">${esc(active.model)}</small>` :
+      '<span class="text-warning">Nenhum ativo</div>';
+
+    tbody.innerHTML = list.map(p => `
+      <tr style="${p.active ? 'background:#e7f5ff' : ''}">
+        <td>
+          <strong>${esc(p.name)}</strong>
+          ${p.active ? '<span class="badge bg-primary ms-1">ATIVO</span>' : ''}
+        </td>
+        <td><code class="small">${esc(p.model || '—')}</code></td>
+        <td>
+          ${p.configured ?
+            `<span class="badge bg-success"><i class="bi bi-check-circle"></i> Configurado</span>` :
+            `<span class="badge bg-secondary"><i class="bi bi-exclamation-circle"></i> Sem chave</span>`}
+        </td>
+        <td>
+          ${p.active ? '<span class="text-muted small">Usando</span>' :
+            p.configured ? `<button class="btn btn-sm btn-outline-primary" onclick="activateProvider('${esc(p.id)}')">
+              <i class="bi bi-check2"></i> Ativar</button>` :
+            '<span class="text-muted small">—</span>'}
+        </td>
+      </tr>
+    `).join('');
+  });
+}
+
+function activateProvider(id) {
+  fetch(`/pipeline/providers/${id}/activate`, { method: 'POST' })
+    .then(r => r.json()).then(d => {
+      if (d.ok) { toast(`Provedor ${id} ativado`); loadProviders(); }
+      else toast(d.error || 'Erro', 'danger');
+    });
+}
+
+// ── Settings ───────────────────────────────────────────────────
+function loadSettings() {
+  fetch('/pipeline/settings').then(r => r.json()).then(cfg => {
+    for (const [key, info] of Object.entries(cfg)) {
+      const el = document.getElementById(`cfg-${key}`);
+      if (el) {
+        el.value = info.configured ? info.value : '';
+        el.placeholder = info.configured ? `••••${info.value.slice(-4)}` : el.placeholder;
+      }
+    }
+  });
+}
+
+function saveSettings(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {};
+  form.querySelectorAll('input[id^="cfg-"]').forEach(inp => {
+    const key = inp.id.replace('cfg-', '');
+    data[key] = inp.value;
+  });
+  fetch('/pipeline/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      toast(`${d.saved.length} configuração(ões) salva(s)`);
+      loadSettings();
+    } else {
+      toast(d.error || 'Erro ao salvar', 'danger');
+    }
+  });
+}
+
+// ── Health ─────────────────────────────────────────────────────
+function checkHealth() {
+  fetch('/health').then(r => r.json()).then(d => {
+    const el = document.getElementById('dbStatus');
+    el.innerHTML = `<i class="bi bi-circle-fill" style="color:${d.status==='ok'?'#51cf66':'#ff6b6b'}; font-size:.5rem"></i> DB: ${d.db}`;
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  checkHealth();
+  loadMetrics();
+  refreshPipelineStatus();
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
